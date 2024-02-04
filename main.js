@@ -98,6 +98,36 @@ const hackFont = await (function initializeHackFont() {
     });
 }) ();
 
+const titilliumFont = await (function initializeTitilliumFont() {
+    const filename = "./Titillium Web ExtraLight_Regular.json";
+    return new Promise((resolve) => {
+        const loader = new FontLoader();
+        loader.load(filename, font => {
+            resolve(font);
+        });
+    });
+}) ();
+
+const titilliumLightFont = await (function initializeTitilliumFont() {
+    const filename = "./Titillium Web Light_Regular.json";
+    return new Promise((resolve) => {
+        const loader = new FontLoader();
+        loader.load(filename, font => {
+            resolve(font);
+        });
+    });
+}) ();
+
+const titilliumRegularFont = await (function initializeTitilliumFont() {
+    const filename = "./Titillium Web_Regular.json";
+    return new Promise((resolve) => {
+        const loader = new FontLoader();
+        loader.load(filename, font => {
+            resolve(font);
+        });
+    });
+}) ();
+
 const interpolations = (function initializeInterpolations() {
 
     /** @param {number} x */
@@ -123,6 +153,8 @@ const scene = (function initializeScene() {
 
     const scene = new THREE.Scene();
 
+    scene.background = new THREE.Color("#080808");
+    
     const box = (function createBox() {
 
         const boxWidth = 1;
@@ -198,11 +230,12 @@ const scene = (function initializeScene() {
 
     }) ();
 
-    function createText(text, color) {
+    function createText(text, color, args = {}) {
         const geometry = new TextGeometry(text, {
-            font: hackFont,
+            font: titilliumRegularFont,
             size: 0.5,
-            height: 0.1
+            height: 0.1,
+            ...args
         });
 
         geometry.center();
@@ -216,7 +249,10 @@ const scene = (function initializeScene() {
         return mesh;
     }
 
-    const xacerstudio = createText("xacerstudio", "#ffffff");
+    const xacerstudio = createText("xacerstudio", "#ffffff", {
+        font: titilliumLightFont,
+        height: 0.05
+    });
 
     const vision = createText("vision", "#ffbbbb");
     vision.translateY(-1);
