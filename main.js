@@ -251,7 +251,8 @@ const scene = (function initializeScene() {
 
     const xacerstudio = createText("xacerstudio", "#ffffff", {
         font: titilliumLightFont,
-        height: 0.05
+        height: 0.05,
+        size: 0.6
     });
 
     const vision = createText("vision", "#ffbbbb");
