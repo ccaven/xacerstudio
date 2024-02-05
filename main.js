@@ -2,6 +2,20 @@
 
 Plan: Stick with our strengths
 
+Next steps:
+    1) Add interactible elements for each category
+        computer + vision: GitHub gists, repositories
+        computer + learning: same
+        human + vision: link to writeup of viva vestibular
+        human + learning: link to Rethinking the Online Classroom
+    2) Simplify interactions:
+        [DONE] Mouse movement (not drag) minorly changes camera angle
+        Mobile device rotation changes camera angle
+        [DONE] Auto-rotate travels in an infinity pattern
+    3) Ensure the page works on mobile devices
+        Slide elements in when they do not fit inside the window
+        Test on phone
+
 Simple experience:
     1) Readable text
     2) Simple 3D geometries and lighting
@@ -23,8 +37,6 @@ Key elements:
 */
 
 import * as THREE from './src/three.js';
-
-import { OrbitControls } from './src/OrbitControls.js';
 import { TextGeometry } from './src/TextGeometry.js';
 import { FontLoader, Font } from './src/FontLoader.js';
 
@@ -423,11 +435,6 @@ const animation = (function initializeAnimationLoop() {
 
     camera.translateZ(8);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.1;
-    controls.enableZoom = false;
-
     let timeSinceWheel = 0;
     canvas.addEventListener("wheel", (event) => {
         scene.updateCurrentState(c => c + event.deltaY / 500.0);
@@ -451,6 +458,33 @@ const animation = (function initializeAnimationLoop() {
 
     let then = performance.now();
 
+    let mouseYawOffset = 0;
+    let mousePitchOffset = 0;
+    let mouseAngleMultiplier = 0.2;
+    canvas.addEventListener("mousemove", event => {
+        mouseYawOffset = (event.pageX - canvas.width / 2) / canvas.width * mouseAngleMultiplier;
+        mousePitchOffset = (event.pageY - canvas.height / 2) / canvas.width * mouseAngleMultiplier;
+    });
+
+    let cameraTime = 0;
+    let cameraPosition = new THREE.Vector3();
+    const cameraFrequency = 0.05;
+    const cameraYawAmplitude = 0.2;
+    const cameraPitchAmplitude = 0.05;
+    function updateCamera(dt) {
+        // Run infinity loop
+        let yaw = Math.sin(cameraTime * cameraFrequency) * cameraYawAmplitude + mouseYawOffset;
+        let pitch = Math.sin(cameraTime * cameraFrequency * 2) * cameraPitchAmplitude + mousePitchOffset;
+
+        cameraPosition.set(0, 0, 8);
+        cameraPosition.applyEuler(new THREE.Euler(pitch, yaw, 0));
+
+        camera.position.copy(cameraPosition);
+        camera.lookAt(0, 0, 0);
+
+        cameraTime += dt;
+    }
+
     function loop() {
         let now = performance.now();
         let dt = (now - then) * 0.001;
@@ -459,8 +493,8 @@ const animation = (function initializeAnimationLoop() {
         if (resizeCanvasAndCamera()) console.log("Resized canvas.");
 
         applyWheelCorrection(dt);
-
-        controls.update();        
+        
+        updateCamera(dt);
 
         renderer.render(scene.scene, camera);
 
