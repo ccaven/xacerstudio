@@ -4,8 +4,8 @@ Plan: Stick with our strengths
 
 Next steps:
     1) Add interactible elements for each category
-        computer + vision: GitHub gists, repositories
-        computer + learning: same
+        [DONE] computer + vision: GitHub gists, repositories
+        [DONE] computer + learning: same
         human + vision: link to writeup of viva vestibular
         human + learning: link to Rethinking the Online Classroom
     2) Simplify interactions:
@@ -312,16 +312,12 @@ const scene = (function initializeScene() {
     }
 
     const computerVision = (function createComputerVision() {
-
         // Link to Github gist
-
         const textures = [
             images["./images/autoencoding_3d_scenes.png"],
             images["./images/rnn_unet.png"],
             images["./images/separable_kernels.png"]
         ];
-
-        
 
         const group = new THREE.Group();
 
@@ -370,50 +366,15 @@ const scene = (function initializeScene() {
 
         }
 
-        /*
-        const geometry = new THREE.BoxGeometry(1.0, 1.0, 0.05);
-        const material = new THREE.MeshLambertMaterial({ color: "#9bc5f5" });
-
-        const mesh = new THREE.Mesh(geometry, material);
-
-        scene.add(mesh);
-        */
-
         scene.add(group);
 
         const startPosition = new THREE.Vector3(0, -20, -5);
-        const targetPosition = new THREE.Vector3(0, -3.8, 0);
-
-        
+        const targetPosition = new THREE.Vector3(0, -3.5, 0);
 
         /** @param {number} localTime */
         function setPosition(localTime) {
             group.position.copy(startPosition).lerp(targetPosition, localTime);
         }
-
-        /*
-        interactionManager.add(mesh);
-        let meshScale = 1.0;
-        let targetMeshScale = 1.0;
-        mesh.addEventListener("mouseover", event => {
-            targetMeshScale = 1.2;
-        });
-        mesh.addEventListener("mouseout", event => {
-            targetMeshScale = 1.0;
-        });
-        mesh.addEventListener("click", event => {
-            // Open link
-            window.open("https://github.com/ccaven", "_blank").focus();
-        });
-
-        function updateMeshScale() {
-            meshScale += (targetMeshScale - meshScale) / 10.0;
-            mesh.scale.setScalar(meshScale);
-            requestAnimationFrame(updateMeshScale);
-        }
-        
-        requestAnimationFrame(updateMeshScale);
-        */
 
         return { group, setPosition };
 
@@ -421,15 +382,85 @@ const scene = (function initializeScene() {
 
     const humanVision = (function createHumanVision() {}) ();
 
-    const computerLearning = (function createComputerLearning() {}) ();
+    const computerLearning = (function createComputerVision() {
+        // Link to Github gist
+        const textures = [
+            images["./images/wire_together_fire_together.png"],
+            images["./images/wave_features.png"]
+        ];
 
-    const humanLearning = (function createHumanLearning() {}) ();
+        const group = new THREE.Group();
+
+        for (let i = 0; i < textures.length; i ++) {
+
+            let texture = textures[i];
+
+            const planeGeometry = new THREE.PlaneGeometry(
+                texture.image.width * 0.01, 
+                texture.image.height * 0.01
+            );
+
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+
+            const mesh = new THREE.Mesh(planeGeometry, material);
+
+            mesh.scale.setX(8);
+            mesh.scale.setY(1);
+
+            mesh.position.setY(i);
+
+            interactionManager.add(mesh);
+
+            let meshScale = 1.0;
+            let targetMeshScale = 1.0;
+            mesh.addEventListener("mouseover", event => {
+                targetMeshScale = 1.2;
+            });
+            mesh.addEventListener("mouseout", event => {
+                targetMeshScale = 1.0;
+            });
+            mesh.addEventListener("click", event => {
+                // Open link
+                window.open(texture.url, "_blank").focus();
+            });
+
+            function updateMeshScale() {
+                meshScale += (targetMeshScale - meshScale) / 10.0;
+                mesh.scale.setScalar(meshScale);
+                requestAnimationFrame(updateMeshScale);
+            }
+            
+            requestAnimationFrame(updateMeshScale);
+
+            group.add(mesh);
+
+        }
+
+        scene.add(group);
+
+        const startPosition = new THREE.Vector3(0, -20, -5);
+        const targetPosition = new THREE.Vector3(0, -2.5, 0);
+
+        /** @param {number} localTime */
+        function setPosition(localTime) {
+            group.position.copy(startPosition).lerp(targetPosition, localTime);
+        }
+
+        return { group, setPosition };
+
+    }) ();
+
+    const humanLearning = (function createHumanLearning() {
+
+
+        
+    }) ();
 
     const perSceneObjects = [
         [],
         [computerVision],
         [],
-        [],
+        [computerLearning],
         [],
     ];
 
