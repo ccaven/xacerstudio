@@ -39,6 +39,7 @@ Key elements:
 import * as THREE from './src/three.js';
 import { TextGeometry } from './src/TextGeometry.js';
 import { FontLoader, Font } from './src/FontLoader.js';
+import { InteractionManager } from './src/Interactive.js';
 
 const run = true;
 
@@ -161,11 +162,60 @@ const interpolations = (function initializeInterpolations() {
 
 }) ();
 
+/** @type {{[key: string]: THREE.Texture} & {[key: string]: { url: string } }} */
+const images = await (async function initializeImages() {
+    const filenames = [
+        "./images/autoencoding_3d_scenes.png",
+        "./images/rnn_unet.png",
+        "./images/separable_kernels.png",
+        "./images/wave_features.png",
+        "./images/wire_together_fire_together.png"
+    ];
+
+    const links = [
+        "https://gist.github.com/ccaven/9ab7ddee25de2df54e2532f0738a78ff",
+        "https://gist.github.com/ccaven/f60555712fb00e2002736f31a35ff832",
+        "https://gist.github.com/ccaven/eda2a120005c0c49ea769c28f0efd2a0",
+        "https://gist.github.com/ccaven/2164aadf529ae4e2a9a51f65957ac7df",
+        "https://gist.github.com/ccaven/0f2a36a0eab0b68ad0e21b5fbdacd6ea"
+    ];
+
+    const loader = new THREE.TextureLoader();
+
+    const textures = await Promise.all(filenames.map(filename => {
+
+        return new Promise(resolve => {
+
+            loader.load(filename, texture => {
+                resolve(texture);
+
+            });
+
+        });
+
+    }));
+
+    const textureDict = {};
+
+    for (let i = 0; i < textures.length; i ++) {
+        textureDict[filenames[i]] = textures[i];
+        textureDict[filenames[i]].url = links[i];
+    }
+
+    return textureDict;
+}) ();
+
 const scene = (function initializeScene() {
 
     const scene = new THREE.Scene();
 
     scene.background = new THREE.Color("#080808");
+
+    const interactionManager = new InteractionManager(
+        renderer,
+        camera,
+        canvas
+    );    
     
     const box = (function createBox() {
 
@@ -261,6 +311,128 @@ const scene = (function initializeScene() {
         return mesh;
     }
 
+    const computerVision = (function createComputerVision() {
+
+        // Link to Github gist
+
+        const textures = [
+            images["./images/autoencoding_3d_scenes.png"],
+            images["./images/rnn_unet.png"],
+            images["./images/separable_kernels.png"]
+        ];
+
+        
+
+        const group = new THREE.Group();
+
+        for (let i = 0; i < textures.length; i ++) {
+
+            let texture = textures[i];
+
+            const planeGeometry = new THREE.PlaneGeometry(
+                texture.image.width * 0.01, 
+                texture.image.height * 0.01
+            );
+
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+
+            const mesh = new THREE.Mesh(planeGeometry, material);
+
+            mesh.scale.setX(8);
+            mesh.scale.setY(1);
+
+            mesh.position.setY(i);
+
+            interactionManager.add(mesh);
+
+            let meshScale = 1.0;
+            let targetMeshScale = 1.0;
+            mesh.addEventListener("mouseover", event => {
+                targetMeshScale = 1.2;
+            });
+            mesh.addEventListener("mouseout", event => {
+                targetMeshScale = 1.0;
+            });
+            mesh.addEventListener("click", event => {
+                // Open link
+                window.open(texture.url, "_blank").focus();
+            });
+
+            function updateMeshScale() {
+                meshScale += (targetMeshScale - meshScale) / 10.0;
+                mesh.scale.setScalar(meshScale);
+                requestAnimationFrame(updateMeshScale);
+            }
+            
+            requestAnimationFrame(updateMeshScale);
+
+            group.add(mesh);
+
+        }
+
+        /*
+        const geometry = new THREE.BoxGeometry(1.0, 1.0, 0.05);
+        const material = new THREE.MeshLambertMaterial({ color: "#9bc5f5" });
+
+        const mesh = new THREE.Mesh(geometry, material);
+
+        scene.add(mesh);
+        */
+
+        scene.add(group);
+
+        const startPosition = new THREE.Vector3(0, -20, -5);
+        const targetPosition = new THREE.Vector3(0, -3.8, 0);
+
+        
+
+        /** @param {number} localTime */
+        function setPosition(localTime) {
+            group.position.copy(startPosition).lerp(targetPosition, localTime);
+        }
+
+        /*
+        interactionManager.add(mesh);
+        let meshScale = 1.0;
+        let targetMeshScale = 1.0;
+        mesh.addEventListener("mouseover", event => {
+            targetMeshScale = 1.2;
+        });
+        mesh.addEventListener("mouseout", event => {
+            targetMeshScale = 1.0;
+        });
+        mesh.addEventListener("click", event => {
+            // Open link
+            window.open("https://github.com/ccaven", "_blank").focus();
+        });
+
+        function updateMeshScale() {
+            meshScale += (targetMeshScale - meshScale) / 10.0;
+            mesh.scale.setScalar(meshScale);
+            requestAnimationFrame(updateMeshScale);
+        }
+        
+        requestAnimationFrame(updateMeshScale);
+        */
+
+        return { group, setPosition };
+
+    }) ();
+
+    const humanVision = (function createHumanVision() {}) ();
+
+    const computerLearning = (function createComputerLearning() {}) ();
+
+    const humanLearning = (function createHumanLearning() {}) ();
+
+    const perSceneObjects = [
+        [],
+        [computerVision],
+        [],
+        [],
+        [],
+    ];
+
     const xacerstudio = createText("xacerstudio", "#ffffff", {
         font: titilliumLightFont,
         height: 0.05,
@@ -294,8 +466,8 @@ const scene = (function initializeScene() {
     const combos = [
         [2, 0], // computer vision
         [3, 0], // human vision
-        [3, 1],  // human learning
         [2, 1], // computer learning
+        [3, 1],  // human learning
     ];
 
     const targetPositions = (function initializeTargetPositions() {
@@ -358,6 +530,16 @@ const scene = (function initializeScene() {
     function setPositions() {
         // Interpolate between floor(currentState) and ceil(currentState)
         if (currentState % 1 == 0) {
+            let sceneIdx = Math.floor(currentState / 2);
+
+            perSceneObjects.forEach((objs, i) => {
+                if (i == sceneIdx) {
+                    objs.forEach(o => o.setPosition(1));
+                } else {
+                    objs.forEach(o => o.setPosition(0));
+                }
+            });
+
             texts.forEach((obj, i) => {
                 obj.position.copy(targetPositions[currentState][i]);
             });
@@ -365,8 +547,10 @@ const scene = (function initializeScene() {
             let a = Math.floor(currentState);
             let b = Math.ceil(currentState);
             
-
-            
+            perSceneObjects.forEach((objs, i) => {
+                let localTime = 1.0 - Math.min(Math.abs(currentState / 2 - i), 1.0);
+                objs.forEach(o => o.setPosition(localTime));
+            });
 
             texts.forEach((obj, i) => {
                 let k = currentState - a;
@@ -407,13 +591,16 @@ const scene = (function initializeScene() {
 
     function correctionLoop() {
         currentState += (targetCurrentState - currentState) / 10;
+        if (Math.abs(currentState - targetCurrentState) < 0.001) {
+            currentState = targetCurrentState;
+        }
         setPositions();
         requestAnimationFrame(correctionLoop);
     }
 
     requestAnimationFrame(correctionLoop);
 
-    return { scene, box, updateCurrentState };
+    return { scene, box, updateCurrentState, updateInteractionManager: interactionManager.update };
 
 }) ();
 
@@ -466,24 +653,33 @@ const animation = (function initializeAnimationLoop() {
         mousePitchOffset = (event.pageY - canvas.height / 2) / canvas.width * mouseAngleMultiplier;
     });
 
-    let cameraTime = 0;
-    let cameraPosition = new THREE.Vector3();
-    const cameraFrequency = 0.05;
-    const cameraYawAmplitude = 0.2;
-    const cameraPitchAmplitude = 0.05;
-    function updateCamera(dt) {
-        // Run infinity loop
-        let yaw = Math.sin(cameraTime * cameraFrequency) * cameraYawAmplitude + mouseYawOffset;
-        let pitch = Math.sin(cameraTime * cameraFrequency * 2) * cameraPitchAmplitude + mousePitchOffset;
+    
+    const updateCamera = (function createCameraUpdater() {
+        // Run an infinity pattern so the background stars are always moving
+        // but the camera never wraps around the text
 
-        cameraPosition.set(0, 0, 8);
-        cameraPosition.applyEuler(new THREE.Euler(pitch, yaw, 0));
+        let cameraTime = 0;
+        let cameraPosition = new THREE.Vector3();
+        
+        const cameraFrequency = 0.05;
+        const cameraYawAmplitude = 0.2;
+        const cameraPitchAmplitude = 0.05;
 
-        camera.position.copy(cameraPosition);
-        camera.lookAt(0, 0, 0);
+        function updateCamera(dt) {
+            let yaw = Math.sin(cameraTime * cameraFrequency) * cameraYawAmplitude + mouseYawOffset;
+            let pitch = Math.sin(cameraTime * cameraFrequency * 2) * cameraPitchAmplitude + mousePitchOffset;
 
-        cameraTime += dt;
-    }
+            cameraPosition.set(0, 0, 8);
+            cameraPosition.applyEuler(new THREE.Euler(pitch, yaw, 0));
+
+            camera.position.copy(cameraPosition);
+            camera.lookAt(0, 0, 0);
+
+            cameraTime += dt;
+        }
+
+        return updateCamera;
+    }) ();
 
     function loop() {
         let now = performance.now();
@@ -493,10 +689,12 @@ const animation = (function initializeAnimationLoop() {
         if (resizeCanvasAndCamera()) console.log("Resized canvas.");
 
         applyWheelCorrection(dt);
-        
+
         updateCamera(dt);
 
         renderer.render(scene.scene, camera);
+
+        scene.updateInteractionManager();
 
         requestAnimationFrame(loop);
 
